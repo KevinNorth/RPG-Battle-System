@@ -29,6 +29,6 @@ package com.kevinnorth.rpg_battle_system.store;
  * other.</li>
  * </ul>
  */
-public interface Reducer {
-    public State reduce(Action action, State previousState);
+public abstract class Reducer {
+    public abstract State reduce(Action action, State previousState);
 }
