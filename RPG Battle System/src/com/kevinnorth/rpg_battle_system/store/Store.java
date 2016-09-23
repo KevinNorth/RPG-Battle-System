@@ -82,7 +82,7 @@ public class Store {
      * Subscribes the specified object to this Store so that any time the
      * Store's state changes, the object will have a chance to respond to the
      * changes.
-     * @param subscriber The 
+     * @param subscriber The object to sbuscribe to the Store.
      */
     public void addSubscriber(StoreSubscriber subscriber) {
         subscribers.add(subscriber);
@@ -103,14 +103,14 @@ public class Store {
     /**
      * @return An immutable List that contains every State the battle has been
      * in, in the order those States occurred, with the first State appearing
-     * at the front of the List.
+     * at the front of the List.  Does not include the current State.
      */
     public List<State> getStateHistory() {
         return Collections.unmodifiableList(stateHistory);
     }
     
     /**
-     * Use a Reducer to change the State of the battle. In addition, all objects
+     * Uses a Reducer to change the State of the battle. In addition, all objects
      * that are subscribed to the Store will be alerted and have a chance to
      * respond to the new State before this function returns. The subscribers
      * may further change the State before this function returns.
