@@ -1,6 +1,7 @@
 package com.kevinnorth.rpg_battle_system.machine;
 
 import com.kevinnorth.rpg_battle_system.Director;
+import com.kevinnorth.rpg_battle_system.actors.Actor;
 import com.kevinnorth.rpg_battle_system.reciever.InputEvent;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
@@ -67,17 +68,39 @@ import java.util.Map;
  * machines themselves, using special flags in the Store, or giving your
  * machine states a different StateMachineReducer to use that knows how to go to
  * the cutscene at the right time.</p>
+ * @param <StoreStateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <StoreActionType> The class that the Store uses to describe actions
+ * when changing the state using a reducer. A generic type is used for the same
+ * reasons the StoreStateType is generic.
+ * @param <TransitionActionType> The class that the StateMachine uses to
+ * describe actions when changing the MachineState using a reducer. A generic
+ * type is used for the same reasons the StoreStateType is generic.
+ * @param <ActorType> The class used to describe an in-battle Actor. A generic
+ * type is used for the same reasons the StoreStateType is generic.
  */
-public class StateMachine implements StoreSubscriber {
-    private final Director director;
-    private MachineState currentState;
-    private final Map<String, MachineState> availableStates;
+public class StateMachine<StoreStateType extends State,
+        StoreActionType extends Action, 
+        TransitionActionType extends StateMachineTransitionAction,
+        ActorType extends Actor>
+        implements StoreSubscriber<StoreStateType> {
+    private final Director<StoreStateType, StoreActionType, ActorType> director;
+    private MachineState<StoreStateType, StoreActionType,
+            TransitionActionType, ActorType> currentState;
+    private final Map<String, MachineState<StoreStateType,
+            StoreActionType, TransitionActionType, ActorType>>
+            availableStates;
 
     /**
      * @param director The battle's Director
      * @param currentState The MachineState to start with
      */
-    public StateMachine(Director director, MachineState currentState) {
+    public StateMachine(Director<StoreStateType, StoreActionType,
+            ActorType> director, MachineState<StoreStateType, StoreActionType,
+            TransitionActionType, ActorType> currentState) {
         this.director = director;
         this.currentState = currentState;
         this.availableStates = new HashMap<>();
@@ -114,10 +137,12 @@ public class StateMachine implements StoreSubscriber {
      * <li>In a similar way, you can reuse StateMachineReducers.</li>
      * </ul>
      * 
-     * @param name
-     * @param machineState 
+     * @param name The name to associate with the new MachineState.
+     * @param machineState The MachineState to add to the StateMachine.
      */
-    public void addMachineState(String name, MachineState machineState) {
+    public void addMachineState(String name,
+            MachineState<StoreStateType, StoreActionType,
+                    TransitionActionType, ActorType> machineState) {
         if(availableStates.containsKey(name)) {
             throw new IllegalStateException("The name \"" + name + "\" is "
                     + "already being used for a MachinteState in this "
@@ -145,7 +170,7 @@ public class StateMachine implements StoreSubscriber {
      * wrong value will lead to unpredictable bugs!</i>
      */
     @Override
-    public boolean recieveNewState(State newState) {
+    public boolean recieveNewState(StoreStateType newState) {
         return currentState.recieveNewState(newState);
     }
     
@@ -193,9 +218,10 @@ public class StateMachine implements StoreSubscriber {
      */
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
-    void changeMachineState(StateMachineReducer reducer,
-            StateMachineTransitionAction action) {
-        State currentStoreState = director.getStoreState();
+    void changeMachineState(
+            StateMachineReducer<StoreStateType, TransitionActionType> reducer,
+            TransitionActionType action) {
+        StoreStateType currentStoreState = director.getStoreState();
         String currentStateString = getCurrentStateName();
                 
         String newStateName = reducer.reduce(currentStateString,
@@ -255,12 +281,15 @@ public class StateMachine implements StoreSubscriber {
      */
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
-    State changeStoreState(Reducer reducer, Action action) {
+    StoreStateType changeStoreState(
+            Reducer<StoreStateType, StoreActionType> reducer,
+            StoreActionType action) {
         return director.changeStoreState(reducer, action);
     }
     
     private String getCurrentStateName() {
-        for(Map.Entry<String, MachineState> namedMachineState
+        for(Map.Entry<String, MachineState<StoreStateType, StoreActionType,
+                TransitionActionType, ActorType>> namedMachineState
                 : availableStates.entrySet()) {
             if(namedMachineState.getValue() == currentState) {
                 return namedMachineState.getKey();

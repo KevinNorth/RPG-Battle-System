@@ -7,8 +7,11 @@
 package com.kevinnorth.rpg_battle_system.store;
 
 /**
- *
+ * The class that the Store uses to keep track of state. Subclassing this type
+ * and directing the other classes to use your subclass via generics allows you
+ * to put whatever arbitrary data you wish into the state as well as use
+ * different, specialized state classes in different battles, but still gives
+ * you compile-time type checking to ensure that all of your code is interacting
+ * with the state object correctly.
  */
-public class State {
-
-}
+public abstract class State { }

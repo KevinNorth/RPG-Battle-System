@@ -1,13 +1,14 @@
 package com.kevinnorth.rpg_battle_system.machine;
 
+import com.kevinnorth.rpg_battle_system.actors.Actor;
 import com.kevinnorth.rpg_battle_system.reciever.InputEvent;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
 import com.kevinnorth.rpg_battle_system.store.State;
 
 /**
- * <p>A state in the StateMachine finite state machine used to control a battle's
- * rules.</p>
+ * <p>A state in the StateMachine finite state machine used to control a
+ * battle's rules.</p>
  * 
  * <p>This class provides several handles that are guaranteed to be called at
  * certain points in time. This allows the MachineState to respond to events to
@@ -15,8 +16,8 @@ import com.kevinnorth.rpg_battle_system.store.State;
  * 
  * <p>Although MachineStates can keep their own internal states, we strongly
  * recommend against that. Instead, MachineStates should enforce their rules by
- * modifying the Store state and changing to other MachineStates. Remember, the
- * Store provides a rich set of mutable information and can be used to set
+ * modifying the Store state and transitioning to other MachineStates. Remember,
+ * the Store provides a rich set of mutable information and can be used to set
  * special flags, which you can set to control the behavior of the same
  * MachineState later on.</p>
  * 
@@ -45,14 +46,33 @@ import com.kevinnorth.rpg_battle_system.store.State;
  * <p>As you can see, implementing a MachineState can be a difficult task. These
  * classes, perhaps more than any others in this library, will determine how
  * your game plays!</p>
+ * @param <StoreStateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <StoreActionType> The class that the Store uses to describe actions
+ * when changing the state using a reducer. A generic type is used for the same
+ * reasons the StoreStateType is generic.
+ * @param <TransitionActionType> The class that the StateMachine uses to
+ * describe actions when changing the MachineState using a reducer. A generic
+ * type is used for the same reasons the StoreStateType is generic.
+ * @param <ActorType> The class used to describe an in-battle Actor. A generic
+ * type is used for the same reasons the StoreStateType is generic.
  */
-public abstract class MachineState {
-    private final StateMachine stateMachine;
+public abstract class MachineState<StoreStateType extends State,
+        StoreActionType extends Action,
+        TransitionActionType extends StateMachineTransitionAction,
+        ActorType extends Actor> {
+    private final StateMachine<StoreStateType, StoreActionType,
+            TransitionActionType, ActorType> stateMachine;
     
     /**
      * @param stateMachine The StateMachine that this MachineState belongs to.
      */
-    public MachineState(StateMachine stateMachine) {
+    public MachineState(StateMachine<StoreStateType, StoreActionType,
+            TransitionActionType, ActorType>
+            stateMachine) {
         this.stateMachine = stateMachine;
     }
 
@@ -88,8 +108,9 @@ public abstract class MachineState {
      * <code>getAvailableStateNames()</code>.
      * 
      */
-    protected final void changeMachineState(StateMachineReducer reducer,
-            StateMachineTransitionAction action) {
+    protected final void changeMachineState(
+            StateMachineReducer<StoreStateType, TransitionActionType> reducer,
+            TransitionActionType action) {
         stateMachine.changeMachineState(reducer, action);
     }
 
@@ -139,7 +160,9 @@ public abstract class MachineState {
      */
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
-    protected final State changeStoreState(Reducer reducer, Action action) {
+    protected final StoreStateType changeStoreState(
+            Reducer<StoreStateType, StoreActionType> reducer,
+            StoreActionType action) {
         return stateMachine.changeStoreState(reducer, action);
     }
     
@@ -151,7 +174,7 @@ public abstract class MachineState {
      * before returning. <code>false</code> otherwise. <i>Returning the
      * wrong value will lead to unpredictable bugs!</i>
      */
-    public abstract boolean recieveNewState(State newState);
+    public abstract boolean recieveNewState(StoreStateType newState);
     
     /**
      * Gives the MachineState a change to respond to user input.

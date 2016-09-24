@@ -28,7 +28,17 @@ package com.kevinnorth.rpg_battle_system.store;
  * to pass information between objects that weren't "logically" close to each
  * other.</li>
  * </ul>
+ * @param <StateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <ActionType> The class that the Store uses to describe actions
+ * when changing the state using a reducer. A generic type is used for the same
+ * reasons the StoreStateType is generic.
  */
-public abstract class Reducer {
-    public abstract State reduce(Action action, State previousState);
+public abstract class Reducer<StateType extends State,
+        ActionType extends Action> {
+    public abstract StateType
+        reduce(ActionType action, StateType previousState);
 }

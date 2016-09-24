@@ -1,6 +1,8 @@
 package com.kevinnorth.rpg_battle_system;
 
+import com.kevinnorth.rpg_battle_system.actors.Actor;
 import com.kevinnorth.rpg_battle_system.machine.StateMachine;
+import com.kevinnorth.rpg_battle_system.machine.StateMachineTransitionAction;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
 import com.kevinnorth.rpg_battle_system.store.State;
@@ -37,12 +39,29 @@ import java.util.List;
  * <p>In addition, the Director facilitates communication between these
  * subsystems so that they have limited dependencies on each other and is in
  * charge of initializing and tearing down each battle sequence.</p>
+ * @param <StoreStateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <StoreActionType> The class that the Store uses to describe actions
+ * when changing the state using a reducer. A generic type is used for the same
+ * reasons the StoreStateType is generic.
+ * @param <ActorType> The class used to describe an in-battle Actor. A generic
+ * type is used for the same reasons the StoreStateType is generic.
  */
-public class Director {
-    private final Store store;
-    private final StateMachine stateMachine;
+public class Director<StoreStateType extends State,
+        StoreActionType extends Action, ActorType extends Actor> {
+    private final Store<StoreStateType, StoreActionType> store;
+    private final StateMachine<StoreStateType, StoreActionType,
+            ? extends StateMachineTransitionAction, ActorType>
+            stateMachine;
 
-    public Director(Store store, StateMachine stateMachine) {
+    public Director(Store<StoreStateType, StoreActionType> store,
+            StateMachine<StoreStateType, StoreActionType,
+                    ? extends StateMachineTransitionAction,
+                    ActorType>
+                    stateMachine) {
         this.store = store;
         this.stateMachine = stateMachine;
         
@@ -63,7 +82,9 @@ public class Director {
      * case, and even if the new State is identical to the previous State, all
      * subscribers will be notified of a state change.)
      */
-    public State changeStoreState(Reducer reducer, Action action) {
+    public StoreStateType changeStoreState(
+            Reducer<StoreStateType, StoreActionType> reducer,
+            StoreActionType action) {
         return store.changeState(reducer, action);
     }
     
@@ -71,7 +92,7 @@ public class Director {
      * Gets the Store's current State.
      * @return The Store's current state.
      */
-    public State getStoreState() {
+    public StoreStateType getStoreState() {
         return store.getCurrentState();
     }
 
@@ -80,7 +101,7 @@ public class Director {
      * in, in the order those States occurred, with the first State appearing
      * at the front of the List. Does not include the current State.
      */
-    public List<State> getStoreHistory() {
+    public List<StoreStateType> getStoreHistory() {
         return store.getStateHistory();
     }
     
@@ -90,7 +111,7 @@ public class Director {
      * changes.
      * @param subscriber The object to sbuscribe to the Store.
      */
-    public void addStoreSubscriber(StoreSubscriber subscriber) {
+    public void addStoreSubscriber(StoreSubscriber<StoreStateType> subscriber) {
         store.addSubscriber(subscriber);
     }
     
@@ -102,7 +123,8 @@ public class Director {
      * way, the subscriber will not receive updates after this function is
      * called.
      */
-    public boolean removeStoreSubscriber(StoreSubscriber subscriber) {
+    public boolean removeStoreSubscriber(
+            StoreSubscriber<StoreStateType> subscriber) {
         return store.removeSubscriber(subscriber);
     }
 }

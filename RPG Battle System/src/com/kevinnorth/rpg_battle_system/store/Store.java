@@ -52,17 +52,25 @@ import java.util.Set;
  * <p>The State keeps track of a history of every State that a battle has gone
  * through over the course of its lifetime. This can be accessed and inspected
  * by any arbitrary object as well.</p>
+ * @param <StateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <ActionType> The class that the Store uses to describe actions
+ * when changing the state using a reducer. A generic type is used for the same
+ * reasons the StoreStateType is generic.
  */
-public class Store {
-    private final Set<StoreSubscriber> subscribers;
-    private final List<State> stateHistory;
-    private State currentState;
+public class Store<StateType extends State, ActionType extends Action> {
+    private final Set<StoreSubscriber<StateType>> subscribers;
+    private final List<StateType> stateHistory;
+    private StateType currentState;
     
     /**
      * @param initialState A State describing the battle immediately after
      * starting.
      */
-    public Store(State initialState) {
+    public Store(StateType initialState) {
         this.subscribers = new HashSet<>();
         this.stateHistory = new LinkedList<>();
         this.currentState = initialState;
@@ -74,7 +82,7 @@ public class Store {
      * changes via <code>addSubscriber()</code>.
      * @return The Store's current state.
      */
-    public State getCurrentState() {
+    public StateType getCurrentState() {
         return currentState;
     }
     
@@ -84,7 +92,7 @@ public class Store {
      * changes.
      * @param subscriber The object to sbuscribe to the Store.
      */
-    public void addSubscriber(StoreSubscriber subscriber) {
+    public void addSubscriber(StoreSubscriber<StateType> subscriber) {
         subscribers.add(subscriber);
     }
     
@@ -96,7 +104,7 @@ public class Store {
      * way, the subscriber will not receive updates after this function is
      * called.
      */
-    public boolean removeSubscriber(StoreSubscriber subscriber) {
+    public boolean removeSubscriber(StoreSubscriber<StateType> subscriber) {
         return subscribers.remove(subscriber);
     }
     
@@ -105,7 +113,7 @@ public class Store {
      * in, in the order those States occurred, with the first State appearing
      * at the front of the List.  Does not include the current State.
      */
-    public List<State> getStateHistory() {
+    public List<StateType> getStateHistory() {
         return Collections.unmodifiableList(stateHistory);
     }
     
@@ -123,8 +131,9 @@ public class Store {
      * case, and even if the new State is identical to the previous State, all
      * subscribers will be notified of a state change.)
      */
-    public State changeState(Reducer reducer, Action action) {
-        State newState = reducer.reduce(action, getCurrentState());
+    public StateType changeState(Reducer<StateType, ActionType> reducer,
+            ActionType action) {
+        StateType newState = reducer.reduce(action, getCurrentState());
         setCurrentState(newState);
         
         alertSubscribers();
@@ -145,7 +154,7 @@ public class Store {
         }
     }
 
-    private void setCurrentState(State newState) {
+    private void setCurrentState(StateType newState) {
         stateHistory.add(currentState);
         currentState = newState;
     }

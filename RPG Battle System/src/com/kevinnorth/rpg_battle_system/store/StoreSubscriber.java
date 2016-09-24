@@ -18,8 +18,14 @@ package com.kevinnorth.rpg_battle_system.store;
  * </code>
  * 
  * <p>on the Store you want to subscribe to.
+ *
+ * @param <StateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
  */
-public interface StoreSubscriber {
+public interface StoreSubscriber<StateType> {
     /**
      * <p>Called whenever a Store that this StoreSubscriber is subscribed to
      * changes its state. You can change the state again within this function,
@@ -41,5 +47,5 @@ public interface StoreSubscriber {
      * before returning. <code>false</code> otherwise. <i>Returning the
      * wrong value will lead to unpredictable bugs!</i>
      */
-    public boolean recieveNewState(State newState);
+    public boolean recieveNewState(StateType newState);
 }

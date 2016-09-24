@@ -11,8 +11,17 @@ import com.kevinnorth.rpg_battle_system.store.State;
  * MachineState to transition to, but it allows the same MachineStates to change
  * their transitioning behaviors simply by using different StateMachineReducers
  * at runtime.
+ * @param <StoreStateType> The class that the Store uses to keep track of state.
+ * Using a generic type allows you to put whatever arbitrary data you wish into
+ * the state as well as use different, specialized state classes in different
+ * battles, but still gives you compile-time type checking to ensure that all of
+ * your code is interacting with the state object correctly.
+ * @param <TransitionActionType> The class that the StateMachine uses to
+ * describe actions when changing the MachineState using a reducer. A generic
+ * type is used for the same reasons the StoreStateType is generic.
  */
-public abstract class StateMachineReducer {
+public abstract class StateMachineReducer<StoreStateType extends State,
+        TransitionActionType extends StateMachineTransitionAction> {
     /**
      * Determines which MachineState to transition to next.
      * @param oldMachineState The MachineState that the StateMachine is
@@ -28,6 +37,6 @@ public abstract class StateMachineReducer {
      * <code>availableMachineStates</code>.
      */
     public abstract String reduce(String oldMachineState, 
-            State currentStoreState, StateMachineTransitionAction action,
+            StoreStateType currentStoreState, TransitionActionType action,
             Iterable<String> availableMachineStates);
 }
