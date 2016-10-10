@@ -3,6 +3,7 @@ package com.kevinnorth.rpg_battle_system;
 import com.kevinnorth.rpg_battle_system.actors.Actor;
 import com.kevinnorth.rpg_battle_system.machine.StateMachine;
 import com.kevinnorth.rpg_battle_system.machine.StateMachineTransitionAction;
+import com.kevinnorth.rpg_battle_system.renderer.Renderer;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
 import com.kevinnorth.rpg_battle_system.store.State;
@@ -56,17 +57,30 @@ public class Director<StoreStateType extends State,
     private final StateMachine<StoreStateType, StoreActionType,
             ? extends StateMachineTransitionAction, ActorType>
             stateMachine;
+    private final Renderer<StoreStateType> renderer;
 
     public Director(Store<StoreStateType, StoreActionType> store,
             StateMachine<StoreStateType, StoreActionType,
                     ? extends StateMachineTransitionAction,
-                    ActorType>
-                    stateMachine) {
+                    ActorType> stateMachine,
+                    Renderer<StoreStateType> renderer) {
         this.store = store;
         this.stateMachine = stateMachine;
+        this.renderer = renderer;
         
         store.addSubscriber(stateMachine);
-    }    
+    }
+    
+    /**
+     * Call this function once per frame to update the game logic and state and
+     * change what is shown on screen.
+     * @param deltaTime The amount of time, in seconds, since the previous frame.
+     */
+    public void onFrame(float deltaTime) {
+        stateMachine.handleFrame(deltaTime);
+        StoreStateType currentState = store.getCurrentState();
+        renderer.render(currentState, deltaTime);
+    }
     
     /**
      * Uses a Reducer to change the State recorded by the Store. In addition,
