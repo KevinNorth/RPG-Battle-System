@@ -1,4 +1,4 @@
-package com.kevinnorth.rpg_battle_system.machine;
+package com.kevinnorth.rpg_battle_system.logic;
 
 import com.kevinnorth.rpg_battle_system.store.State;
 
@@ -20,8 +20,8 @@ import com.kevinnorth.rpg_battle_system.store.State;
  * describe actions when changing the MachineState using a reducer. A generic
  * type is used for the same reasons the StoreStateType is generic.
  */
-public abstract class StateMachineReducer<StoreStateType extends State,
-        TransitionActionType extends StateMachineTransitionAction> {
+public abstract class LogicStateReducer<StoreStateType extends State,
+        TransitionActionType extends LogicMachineTransitionAction> {
     /**
      * Determines which MachineState to transition to next.
      * @param oldMachineState The MachineState that the StateMachine is

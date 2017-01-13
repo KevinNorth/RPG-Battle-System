@@ -1,8 +1,8 @@
 package com.kevinnorth.rpg_battle_system;
 
-import com.kevinnorth.rpg_battle_system.actors.Actor;
-import com.kevinnorth.rpg_battle_system.machine.StateMachine;
-import com.kevinnorth.rpg_battle_system.machine.StateMachineTransitionAction;
+import com.kevinnorth.rpg_battle_system.configuration.Configuration;
+import com.kevinnorth.rpg_battle_system.logic.LogicMachine;
+import com.kevinnorth.rpg_battle_system.logic.LogicMachineTransitionAction;
 import com.kevinnorth.rpg_battle_system.renderer.Renderer;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
@@ -48,25 +48,28 @@ import java.util.List;
  * @param <StoreActionType> The class that the Store uses to describe actions
  * when changing the state using a reducer. A generic type is used for the same
  * reasons the StoreStateType is generic.
- * @param <ActorType> The class used to describe an in-battle Actor. A generic
+ * @param <ConfigurationType> The class used to describe an in-battle Actor. A generic
  * type is used for the same reasons the StoreStateType is generic.
  */
 public class Director<StoreStateType extends State,
-        StoreActionType extends Action, ActorType extends Actor> {
+        StoreActionType extends Action, ConfigurationType extends Configuration> {
     private final Store<StoreStateType, StoreActionType> store;
-    private final StateMachine<StoreStateType, StoreActionType,
-            ? extends StateMachineTransitionAction, ActorType>
+    private final LogicMachine<StoreStateType, StoreActionType,
+            ? extends LogicMachineTransitionAction, ConfigurationType>
             stateMachine;
     private final Renderer<StoreStateType> renderer;
+    private final ConfigurationType configuration;
 
     public Director(Store<StoreStateType, StoreActionType> store,
-            StateMachine<StoreStateType, StoreActionType,
-                    ? extends StateMachineTransitionAction,
-                    ActorType> stateMachine,
-                    Renderer<StoreStateType> renderer) {
+            LogicMachine<StoreStateType, StoreActionType,
+                    ? extends LogicMachineTransitionAction,
+                    ConfigurationType> stateMachine,
+                    Renderer<StoreStateType> renderer,
+            ConfigurationType configuration) {
         this.store = store;
         this.stateMachine = stateMachine;
         this.renderer = renderer;
+        this.configuration = configuration;
         
         store.addSubscriber(stateMachine);
     }
@@ -96,9 +99,9 @@ public class Director<StoreStateType extends State,
      * case, and even if the new State is identical to the previous State, all
      * subscribers will be notified of a state change.)
      */
-    public StoreStateType changeStoreState(
-            Reducer<StoreStateType, StoreActionType> reducer,
-            StoreActionType action) {
+    public <SpecificActionType extends StoreActionType> StoreStateType
+        changeStoreState(Reducer<StoreStateType, SpecificActionType> reducer,
+            SpecificActionType action) {
         return store.changeState(reducer, action);
     }
     
@@ -110,6 +113,14 @@ public class Director<StoreStateType extends State,
         return store.getCurrentState();
     }
 
+    /**
+     * Gets the battle's configuration.
+     * @return The battle's Configuration.
+     */
+    public ConfigurationType getConfiguration() {
+        return configuration;
+    }
+    
     /**
      * @return An immutable List that contains every State the Store has been
      * in, in the order those States occurred, with the first State appearing

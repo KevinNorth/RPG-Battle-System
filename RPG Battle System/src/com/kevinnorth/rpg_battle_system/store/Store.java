@@ -131,8 +131,9 @@ public class Store<StateType extends State, ActionType extends Action> {
      * case, and even if the new State is identical to the previous State, all
      * subscribers will be notified of a state change.)
      */
-    public StateType changeState(Reducer<StateType, ActionType> reducer,
-            ActionType action) {
+    public <SpecificActionType extends ActionType> StateType
+        changeState(Reducer<StateType, SpecificActionType> reducer,
+            SpecificActionType action) {
         StateType newState = reducer.reduce(action, getCurrentState());
         setCurrentState(newState);
         

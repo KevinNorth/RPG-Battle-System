@@ -1,7 +1,7 @@
-package com.kevinnorth.rpg_battle_system.machine;
+package com.kevinnorth.rpg_battle_system.logic;
 
 import com.kevinnorth.rpg_battle_system.Director;
-import com.kevinnorth.rpg_battle_system.actors.Actor;
+import com.kevinnorth.rpg_battle_system.configuration.Configuration;
 import com.kevinnorth.rpg_battle_system.reciever.InputEvent;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
@@ -11,15 +11,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * <p>Implements the rules of the battle using a finite state machine. Each state
- * in the FSM represents a different set of rules and control flow that the
- * battle goes through. By using a state machine to go through those
+ * <p>Implements the rules of the battle using a finite state machine. Each
+ * state in the FSM represents a different set of rules and control flow that
+ * the battle goes through. By using a state machine to go through those
  * implementations of the rules, the battle system can include whatever
  * arbitrary rules you wish and can have them relate to each other in any way
  * you wish as well.</p>
  * 
  * <p>For example, some common types of rules you might encode into a single
- * MachineState include:</p>
+ * LogicState include:</p>
  * 
  * <ul>
  * <li>How to handle the player's turn</li>
@@ -43,30 +43,30 @@ import java.util.Map;
  * <li>Moving a character from one team to another</li>
  * </ul>
  * 
- * <p>In a more naive solution, it would be easier to program a simple battle,
- * but implementing any of the exotic rulesets listed above would require
- * adding new code to an existing, brittle, and likely very large class. This
- * State Machine pattern allows you implement any new rules you wish simply by
- * writing new MachineState implementations.</p>
+ * <p>In a more naive solution, it would be straightfoward to program a simple
+ * battle, but implementing any of the exotic rulesets listed above would
+ * require adding new code to an existing, brittle, and likely very large class.
+ * This State Machine pattern allows you implement any new rules you wish simply
+ * by writing new LogicState implementations.</p>
  * 
- * <p>Furthermore, MachineStates do not come with hardcoded transitions to other
+ * <p>Furthermore, LogicStates do not come with hardcoded transitions to other
  * states in the state machine! Instead, transitions are determined at runtime.
  * States can call one of two <code>changeState()</code> functions to transition
- * to another MachineState at any time. One immediately transitions to a
+ * to another LogicState at any time. One immediately transitions to a
  * specific state that can be determined at runtime, and the other uses the same
  * Reducer pattern used by the Store to functionally determine which
- * MachineState to go to next.</p>
+ * LogicState to go to next.</p>
  * 
  * <p>Either way, you can not only give each battle different instances of
- * MachineStates that implement different rules - you can also have battles
- * transition between the same MachineStates in different orders. For example,
+ * LogicStates that implement different rules - you can also have battles
+ * transition between the same LogicStates in different orders. For example,
  * if you want to have a battle that is identical to most of your game's battles
  * except that it has a cutscene halfway through, the only changes to your
  * typical battle scenario would be to add a cutscene machine state and give
  * your existing machine states a new transition that goes to the cutscene at
  * the right time. This can be done using special flags in the state
  * machines themselves, using special flags in the Store, or giving your
- * machine states a different StateMachineReducer to use that knows how to go to
+ * machine states a different StateLogicReducer to use that knows how to go to
  * the cutscene at the right time.</p>
  * @param <StoreStateType> The class that the Store uses to keep track of state.
  * Using a generic type allows you to put whatever arbitrary data you wish into
@@ -79,90 +79,92 @@ import java.util.Map;
  * @param <TransitionActionType> The class that the StateMachine uses to
  * describe actions when changing the MachineState using a reducer. A generic
  * type is used for the same reasons the StoreStateType is generic.
- * @param <ActorType> The class used to describe an in-battle Actor. A generic
+ * @param <ConfigurationType> The class used to describe an in-battle Actor. A generic
  * type is used for the same reasons the StoreStateType is generic.
  */
-public class StateMachine<StoreStateType extends State,
+public class LogicMachine<StoreStateType extends State,
         StoreActionType extends Action, 
-        TransitionActionType extends StateMachineTransitionAction,
-        ActorType extends Actor>
+        TransitionActionType extends LogicMachineTransitionAction,
+        ConfigurationType extends Configuration>
         implements StoreSubscriber<StoreStateType> {
-    private final Director<StoreStateType, StoreActionType, ActorType> director;
-    private MachineState<StoreStateType, StoreActionType,
-            TransitionActionType, ActorType> currentState;
-    private final Map<String, MachineState<StoreStateType,
-            StoreActionType, TransitionActionType, ActorType>>
+    private final Director<StoreStateType, StoreActionType,
+            ConfigurationType> director;
+    private LogicState<StoreStateType, StoreActionType,
+            TransitionActionType, ConfigurationType> currentState;
+    private final Map<String, LogicState<StoreStateType,
+            StoreActionType, TransitionActionType, ConfigurationType>>
             availableStates;
 
     /**
      * @param director The battle's Director
      * @param currentState The MachineState to start with
      */
-    public StateMachine(Director<StoreStateType, StoreActionType,
-            ActorType> director, MachineState<StoreStateType, StoreActionType,
-            TransitionActionType, ActorType> currentState) {
+    public LogicMachine(Director<StoreStateType, StoreActionType,
+            ConfigurationType> director, LogicState<StoreStateType,
+            StoreActionType, TransitionActionType, ConfigurationType>
+            currentState) {
         this.director = director;
         this.currentState = currentState;
         this.availableStates = new HashMap<>();
     }
     
     /**
-     * <p>Adds a new MachineState to the list of MachineStates this StateMachine
+     * <p>Adds a new LogicState to the list of LogicStates this LogicMachine
      * can transition to.</p>
      * 
-     * <p>Each MachineState is associated with a String, effectively a name,
-     * that is used at runtime to transition between different MachineStates.
-     * The name you pass with this MachineState must not have been used earlier
-     * for another MachineState on this StateMachine. If this precondition isn't
+     * <p>Each LogicState is associated with a String, effectively a name,
+     * that is used at runtime to transition between different LogicStates.
+     * The name you pass with this LogicState must not have been used earlier
+     * for another LogicState on this LogicMachine. If this precondition isn't
      * met, this method will throw an exception.</p>
      * 
-     * <p>Associating each MachineState with a name and comparing Strings at
+     * <p>Associating each LogicState with a name and comparing Strings at
      * runtime is more dangerous than specifying an instance of a class
      * directly, but it has several benefits:</p>
      * 
      * <ul>
-     * <li>The same instance of a MachineState can be reused, saving memory and
+     * <li>The same instance of a LogicState can be reused, saving memory and
      * avoiding hitting the garbage collector frequently, especially if some
-     * MachineStates have large memory footprints.</li>
-     * <li>If you use names that describe MachineStates in terms of their roles
+     * LogicStates have large memory footprints.</li>
+     * <li>If you use names that describe LogicStates in terms of their roles
      * in a battle instead of what they are, you can change the transition graph
-     * simply by associating different MachineStates with the same names. For
+     * simply by associating different LogicStates with the same names. For
      * example, you might have a name "PostAttack", which occurs after an
-     * AttackMachineState transitions and typically goes to the next player's
+     * AttackLogicState transitions and typically goes to the next player's
      * turn. If you wanted to insert a cutscene in a battle, you could simply
-     * insert a different MachineState that determines whether going into the
+     * insert a different LogicState that determines whether going into the
      * cutscene is appropriate and name it "PostAttack" instead. This would
-     * seamlessly cause your AttackMachineState to transition to the
-     * pre-cutscene MachineState at runtime with little additional code.</li>
-     * <li>In a similar way, you can reuse StateMachineReducers.</li>
+     * seamlessly cause your AttackLogicState to transition to the
+     * pre-cutscene LogicState at runtime with little additional code.</li>
+     * <li>In a similar way, you can reuse LogicStateReducers.</li>
      * </ul>
      * 
-     * @param name The name to associate with the new MachineState.
-     * @param machineState The MachineState to add to the StateMachine.
+     * @param name The name to associate with the new LogicState.
+     * @param logicState The LogicState to add to the LogicMachine.
      */
-    public void addMachineState(String name,
-            MachineState<StoreStateType, StoreActionType,
-                    TransitionActionType, ActorType> machineState) {
+    public void addLogicState(String name,
+            LogicState<StoreStateType, StoreActionType,
+                    TransitionActionType, ConfigurationType> logicState) {
         if(availableStates.containsKey(name)) {
             throw new IllegalStateException("The name \"" + name + "\" is "
-                    + "already being used for a MachinteState in this "
-                    + "StateMachine. Using the same name twice would lose "
-                    + "the previous MachineState.");
+                    + "already being used for a LogicState in this "
+                    + "LogicMachine. Using the same name twice would lose "
+                    + "the previous LogicState.");
         }
         
-        availableStates.put(name, machineState);
+        availableStates.put(name, logicState);
     }
 
     /**
      * @return A list of the Strings that can be used to identify and transition
-     * between MachineStates in this particular instance of StateMachine.
+     * between LogicStates in this particular instance of LogicMachine.
      */
     public Iterable<String> getAvailableStateNames() {
         return availableStates.keySet();
     }
     
     /**
-     * Gives the current MachineState a chance to respond whenever the
+     * Gives the current LogicState a chance to respond whenever the
      * Store's state changes.
      * @param newState The new Store State.
      * @return <code>true</code> if you call <code>store.changeState()</code>
@@ -193,6 +195,26 @@ public class StateMachine<StoreStateType extends State,
     }
     
     /**
+     * Gets the current Store State from the Store.
+     * @return The current state from the Store.
+     */
+    /* This method's visibility is deliberately set to package visibility,
+     * which is why it isn't prefixed by a visibility modifier. */
+    StoreStateType getCurrentState() {
+        return director.getStoreState();
+    }
+    
+    /**
+     * Gets the battle's configuration.
+     * @return The battle's Configuration.
+     */
+    /* This method's visibility is deliberately set to package visibility,
+     * which is why it isn't prefixed by a visibility modifier. */
+    ConfigurationType getConfiguration() {
+        return director.getConfiguration();
+    }
+    
+    /**
      * <p>Changes the current MachineState. This function uses an approach
      * similar to the one used by the Store State: It takes a reducer function
      * and a description of the action that is causing the machine state
@@ -211,7 +233,7 @@ public class StateMachine<StoreStateType extends State,
      * what the next MachineState will be.
      * @param action A StateMachineTranisitionAction that describes the reason
      * why the State Machine is transitioning.
-     * @throws MissingMachineStateException If the String returned by the
+     * @throws MissingLogicStateException If the String returned by the
      * <code>reducer</code> isn't in the collection returned by
      * <code>getAvailableStateNames()</code>.
      * 
@@ -219,7 +241,7 @@ public class StateMachine<StoreStateType extends State,
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
     void changeMachineState(
-            StateMachineReducer<StoreStateType, TransitionActionType> reducer,
+            LogicStateReducer<StoreStateType, TransitionActionType> reducer,
             TransitionActionType action) {
         StoreStateType currentStoreState = director.getStoreState();
         String currentStateString = getCurrentStateName();
@@ -249,7 +271,7 @@ public class StateMachine<StoreStateType extends State,
      * corresponding to the MachineState value in the
      * <code>availableStates</code> map originally passed to this StateMachine's
      * constructor.
-     * @throws MissingMachineStateException If <code>newStateName</code>
+     * @throws MissingLogicStateException If <code>newStateName</code>
      * isn't in the collection returned by
      * <code>getAvailableStateNames()</code>.
      */
@@ -259,7 +281,7 @@ public class StateMachine<StoreStateType extends State,
         currentState = availableStates.get(newStateName);
         
         if(currentState == null) {
-            throw new MissingMachineStateException(
+            throw new MissingLogicStateException(
                     "There is no state associated with the string \""
                             + newStateName + "\".");
         }
@@ -281,15 +303,15 @@ public class StateMachine<StoreStateType extends State,
      */
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
-    StoreStateType changeStoreState(
-            Reducer<StoreStateType, StoreActionType> reducer,
-            StoreActionType action) {
+    <SpecificActionType extends StoreActionType> StoreStateType changeStoreState(
+            Reducer<StoreStateType, SpecificActionType> reducer,
+            SpecificActionType action) {
         return director.changeStoreState(reducer, action);
     }
     
     private String getCurrentStateName() {
-        for(Map.Entry<String, MachineState<StoreStateType, StoreActionType,
-                TransitionActionType, ActorType>> namedMachineState
+        for(Map.Entry<String, LogicState<StoreStateType, StoreActionType,
+                TransitionActionType, ConfigurationType>> namedMachineState
                 : availableStates.entrySet()) {
             if(namedMachineState.getValue() == currentState) {
                 return namedMachineState.getKey();

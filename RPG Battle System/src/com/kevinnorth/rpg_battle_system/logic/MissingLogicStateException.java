@@ -4,12 +4,12 @@
  * and open the template in the editor.
  */
 
-package com.kevinnorth.rpg_battle_system.machine;
+package com.kevinnorth.rpg_battle_system.logic;
 
 /**
  * Indicates that a StateMachine attempted to switch to an invalid MachineState.
  */
-public class MissingMachineStateException extends RuntimeException {
-    public MissingMachineStateException(String string) {
+public class MissingLogicStateException extends RuntimeException {
+    public MissingLogicStateException(String string) {
     }
 }

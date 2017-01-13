@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package com.kevinnorth.rpg_battle_system.machine;
+package com.kevinnorth.rpg_battle_system.logic;
 
 /**
  * <p>An object describing why and how a transition to a new MachineState is
@@ -18,6 +18,6 @@ package com.kevinnorth.rpg_battle_system.machine;
  *
  * @see StateMachineReducer
  */
-public abstract class StateMachineTransitionAction {
+public abstract class LogicMachineTransitionAction {
 
 }

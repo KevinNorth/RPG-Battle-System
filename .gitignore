@@ -17,3 +17,6 @@ hs_err_pid*
 # Mac OSX
 .DS_Store
 /RPG Battle System/build/
+/RPG Battle Proof-of-concept (console app)/nbproject/private/
+/RPG Battle Proof-of-concept (console app)/build/
+/RPG Battle System/dist/

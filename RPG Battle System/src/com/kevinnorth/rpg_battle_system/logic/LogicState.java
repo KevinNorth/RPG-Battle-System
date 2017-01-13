@@ -1,6 +1,6 @@
-package com.kevinnorth.rpg_battle_system.machine;
+package com.kevinnorth.rpg_battle_system.logic;
 
-import com.kevinnorth.rpg_battle_system.actors.Actor;
+import com.kevinnorth.rpg_battle_system.configuration.Configuration;
 import com.kevinnorth.rpg_battle_system.reciever.InputEvent;
 import com.kevinnorth.rpg_battle_system.store.Action;
 import com.kevinnorth.rpg_battle_system.store.Reducer;
@@ -60,17 +60,17 @@ import com.kevinnorth.rpg_battle_system.store.State;
  * @param <ActorType> The class used to describe an in-battle Actor. A generic
  * type is used for the same reasons the StoreStateType is generic.
  */
-public abstract class MachineState<StoreStateType extends State,
+public abstract class LogicState<StoreStateType extends State,
         StoreActionType extends Action,
-        TransitionActionType extends StateMachineTransitionAction,
-        ActorType extends Actor> {
-    private final StateMachine<StoreStateType, StoreActionType,
+        TransitionActionType extends LogicMachineTransitionAction,
+        ActorType extends Configuration> {
+    private final LogicMachine<StoreStateType, StoreActionType,
             TransitionActionType, ActorType> stateMachine;
     
     /**
      * @param stateMachine The StateMachine that this MachineState belongs to.
      */
-    public MachineState(StateMachine<StoreStateType, StoreActionType,
+    public LogicState(LogicMachine<StoreStateType, StoreActionType,
             TransitionActionType, ActorType>
             stateMachine) {
         this.stateMachine = stateMachine;
@@ -109,7 +109,7 @@ public abstract class MachineState<StoreStateType extends State,
      * 
      */
     protected final void changeMachineState(
-            StateMachineReducer<StoreStateType, TransitionActionType> reducer,
+            LogicStateReducer<StoreStateType, TransitionActionType> reducer,
             TransitionActionType action) {
         stateMachine.changeMachineState(reducer, action);
     }
@@ -160,9 +160,9 @@ public abstract class MachineState<StoreStateType extends State,
      */
     /* This method's visibility is deliberately set to package visibility,
      * which is why it isn't prefixed by a visibility modifier. */
-    protected final StoreStateType changeStoreState(
-            Reducer<StoreStateType, StoreActionType> reducer,
-            StoreActionType action) {
+    protected final <SpecificActionType extends StoreActionType> StoreStateType
+        changeStoreState(Reducer<StoreStateType, SpecificActionType> reducer,
+            SpecificActionType action) {
         return stateMachine.changeStoreState(reducer, action);
     }
     
